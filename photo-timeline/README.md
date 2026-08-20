@@ -1,12 +1,12 @@
 # Repository-backed photo timeline
 
-This is a durable GitHub Pages photo archive, not a temporary browser uploader. Put the original photo files in the repository's `photos/` folder, commit and push them, and the site will still show them when you return later.
+This is a durable GitHub Pages photo archive, not a temporary browser uploader. Put the original photo files in `photo-timeline/photos/2026/08/`, commit and push them, and the site will still show them when you return later.
 
 The dark, compact top rail is an Artemis-style chronological strip: every little tile is a photo, grouped by its capture day. Clicking a tile or a gallery photo opens it larger.
 
 ## The everyday workflow
 
-1. Copy or drag photos into `photos/`. You can create folders such as `photos/2026/04/` to keep things tidy.
+1. Copy or drag photos into `photo-timeline/photos/2026/08/`. That is the collection folder this version reads.
 2. Commit and push those changes to the `main` branch. GitHub Desktop is an easy way to do this: the new files appear in **Changes**, then choose **Commit to main** and **Push origin**.
 3. GitHub Actions reads the image metadata, builds the timeline, and publishes the refreshed site automatically.
 
@@ -29,7 +29,7 @@ The build script uses the first usable source below, in order:
 1. `DateTimeOriginal` EXIF capture date
 2. `CreateDate` EXIF creation date
 3. A manual entry in `timeline-overrides.json`
-4. A `YYYY-MM-DD`, `YYYY_MM_DD`, or `YYYY.MM.DD` date in the filename
+4. A `YYYY-MM-DD`, `YYYY_MM_DD`, `YYYY.MM.DD`, or `YYYYMMDD` date in the filename
 5. An **Undated** archive section
 
 It deliberately does **not** use file modified time: Git does not preserve that date when it checks out a repository, so it would be misleading.
@@ -38,7 +38,7 @@ Use `timeline-overrides.json` for screenshots or edited images that lost their m
 
 ```json
 {
-  "2026/04/untitled-screenshot.png": {
+  "2026/08/untitled-screenshot.png": {
     "date": "2026-04-06",
     "caption": "First field test"
   },

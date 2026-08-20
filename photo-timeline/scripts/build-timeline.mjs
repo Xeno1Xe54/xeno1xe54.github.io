@@ -5,7 +5,10 @@ import { fileURLToPath } from 'node:url';
 import exifr from 'exifr';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+// This is the one source collection for the current timeline.
+// Its full repository path is: photo-timeline/photos/2026/08
 const photosDirectory = resolve(root, 'photos');
+const collectionDirectory = resolve(photosDirectory, '2026', '08');
 const outputDirectory = resolve(root, 'dist', 'data');
 const overridesPath = resolve(root, 'timeline-overrides.json');
 const imageExtensions = new Set(['.avif', '.gif', '.heic', '.heif', '.jpeg', '.jpg', '.png', '.webp']);
@@ -52,7 +55,9 @@ function dateKeyFromExif(value) {
 
 function dateKeyFromFilename(filename) {
   const match = filename.match(/(?:^|[^0-9])(\d{4})[-_.](\d{2})[-_.](\d{2})(?:[^0-9]|$)/);
-  return match ? validDateKey(`${match[1]}-${match[2]}-${match[3]}`) : null;
+  if (match) return validDateKey(`${match[1]}-${match[2]}-${match[3]}`);
+  const compactMatch = filename.match(/(?:^|[^0-9])(\d{4})(\d{2})(\d{2})(?:[^0-9]|$)/);
+  return compactMatch ? validDateKey(`${compactMatch[1]}-${compactMatch[2]}-${compactMatch[3]}`) : null;
 }
 
 function publicPath(relativePath) {
@@ -65,6 +70,7 @@ function normalizeOverride(value) {
 }
 
 async function recordFor(file, overrides) {
+  // Keep paths relative to /photos so the deployed URLs stay photo-timeline/photos/2026/08/...
   const relativePath = relative(photosDirectory, file).replaceAll('\\', '/');
   const override = normalizeOverride(overrides[relativePath]);
   let metadata = {};
@@ -96,7 +102,7 @@ async function recordFor(file, overrides) {
 }
 
 const overrides = await loadOverrides();
-const files = await recursivelyFindImages(photosDirectory);
+const files = await recursivelyFindImages(collectionDirectory);
 const photos = await Promise.all(files.map(file => recordFor(file, overrides)));
 photos.sort((a, b) => (a.capturedDate || '9999-12-31').localeCompare(b.capturedDate || '9999-12-31') || a.filename.localeCompare(b.filename));
 await mkdir(outputDirectory, { recursive: true });

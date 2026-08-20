@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="A private, browser-based photo timeline." />
+    <title>Field Notes — Photo Timeline</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="wordmark" href="#top" aria-label="Field Notes home">
+        <span class="wordmark-mark">✦</span> FIELD NOTES
+      </a>
+      <p class="header-note">A chronological photo archive</p>
+    </header>
+
+    <main id="top">
+      <section class="intro" aria-labelledby="page-title">
+        <p class="eyebrow">PERSONAL ARCHIVE / <span id="photo-count">0 PHOTOS</span></p>
+        <h1 id="page-title">The little moments<br />make the story.</h1>
+        <p class="lede">Drop in a batch of photos. Their embedded capture dates become a timeline—right here in your browser.</p>
+      </section>
+
+      <section class="controls" aria-label="Add photos">
+        <label id="drop-zone" class="drop-zone" for="photo-input" tabindex="0">
+          <span class="drop-icon" aria-hidden="true">↓</span>
+          <span class="drop-copy"><strong>Drop photos here</strong><small>or choose files from your computer</small></span>
+          <span class="browse">Browse</span>
+        </label>
+        <input id="photo-input" type="file" accept="image/*,.heic,.heif" multiple hidden />
+        <p id="status" class="status" role="status">Nothing is uploaded or sent anywhere.</p>
+        <div class="actions">
+          <button id="export-button" class="text-button" type="button" disabled>Download timeline data</button>
+          <button id="clear-button" class="text-button danger" type="button" disabled>Clear photos</button>
+        </div>
+      </section>
+
+      <section id="empty-state" class="empty-state">
+        <div class="empty-orbit orbit-one"></div><div class="empty-orbit orbit-two"></div>
+        <p>YOUR TIMELINE<br />STARTS HERE</p>
+      </section>
+
+      <section id="timeline" class="timeline" aria-live="polite"></section>
+    </main>
+
+    <dialog id="photo-dialog" class="photo-dialog">
+      <button id="close-dialog" class="close-dialog" aria-label="Close photo">×</button>
+      <img id="dialog-image" alt="" />
+      <div class="dialog-caption"><p id="dialog-date"></p><h2 id="dialog-name"></h2></div>
+    </dialog>
+
+    <!-- EXIF reading happens locally. This is only a small parsing library, not an upload service. -->
+    <script src="https://cdn.jsdelivr.net/npm/exifr/dist/lite.umd.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

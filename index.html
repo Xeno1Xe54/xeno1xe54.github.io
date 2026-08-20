@@ -3,56 +3,52 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="A private, browser-based photo timeline." />
-    <title>Field Notes — Photo Timeline</title>
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <meta name="description" content="A repository-backed photo timeline." />
+    <title>Photo Timeline</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <header class="site-header">
-      <a class="wordmark" href="#top" aria-label="Field Notes home">
-        <span class="wordmark-mark">✦</span> FIELD NOTES
-      </a>
-      <p class="header-note">A chronological photo archive</p>
+    <header class="masthead">
+      <a class="site-title" href="./" aria-label="Photo timeline home"><span class="title-star">✦</span><span id="site-title">PHOTO TIMELINE</span></a>
+      <p id="date-range" class="date-range">ADD PHOTOS TO BEGIN</p>
     </header>
 
-    <main id="top">
-      <section class="intro" aria-labelledby="page-title">
-        <p class="eyebrow">PERSONAL ARCHIVE / <span id="photo-count">0 PHOTOS</span></p>
-        <h1 id="page-title">The little moments<br />make the story.</h1>
-        <p class="lede">Drop in a batch of photos. Their embedded capture dates become a timeline—right here in your browser.</p>
+    <section class="orbit-rail" aria-label="Chronological photo timeline">
+      <div id="timeline-scroll" class="timeline-scroll" tabindex="0">
+        <div id="timeline" class="timeline" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <main>
+      <section class="intro" aria-labelledby="archive-heading">
+        <p class="eyebrow">REPOSITORY-BACKED PHOTO ARCHIVE</p>
+        <h1 id="archive-heading">Every image,<br />right on time.</h1>
+        <p id="intro-copy" class="intro-copy">Photos in this archive are served directly from the repository and organized by their capture metadata.</p>
       </section>
 
-      <section class="controls" aria-label="Add photos">
-        <label id="drop-zone" class="drop-zone" for="photo-input" tabindex="0">
-          <span class="drop-icon" aria-hidden="true">↓</span>
-          <span class="drop-copy"><strong>Drop photos here</strong><small>or choose files from your computer</small></span>
-          <span class="browse">Browse</span>
-        </label>
-        <input id="photo-input" type="file" accept="image/*,.heic,.heif" multiple hidden />
-        <p id="status" class="status" role="status">Nothing is uploaded or sent anywhere.</p>
-        <div class="actions">
-          <button id="export-button" class="text-button" type="button" disabled>Download timeline data</button>
-          <button id="clear-button" class="text-button danger" type="button" disabled>Clear photos</button>
-        </div>
+      <section id="empty-state" class="empty-state" hidden>
+        <p class="eyebrow">NO PHOTOS YET</p>
+        <h2>Start with the <code>photos</code> folder.</h2>
+        <p>Add your pictures to <code>photos/</code>, run <code>npm run build</code>, then push to GitHub. The deployment workflow will publish the updated archive.</p>
       </section>
 
-      <section id="empty-state" class="empty-state">
-        <div class="empty-orbit orbit-one"></div><div class="empty-orbit orbit-two"></div>
-        <p>YOUR TIMELINE<br />STARTS HERE</p>
-      </section>
-
-      <section id="timeline" class="timeline" aria-live="polite"></section>
+      <section id="photo-archive" class="photo-archive" aria-label="Photo archive"></section>
     </main>
 
     <dialog id="photo-dialog" class="photo-dialog">
       <button id="close-dialog" class="close-dialog" aria-label="Close photo">×</button>
-      <img id="dialog-image" alt="" />
-      <div class="dialog-caption"><p id="dialog-date"></p><h2 id="dialog-name"></h2></div>
+      <figure>
+        <img id="dialog-image" alt="" />
+        <figcaption>
+          <p id="dialog-date"></p>
+          <h2 id="dialog-name"></h2>
+          <p id="dialog-caption" class="dialog-caption" hidden></p>
+        </figcaption>
+      </figure>
     </dialog>
 
-    <!-- EXIF reading happens locally. This is only a small parsing library, not an upload service. -->
-    <script src="https://cdn.jsdelivr.net/npm/exifr/dist/lite.umd.js"></script>
+    <footer><span>PHOTO TIMELINE</span><span>BUILT FROM <code>/photos</code></span></footer>
+    <script src="site-config.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

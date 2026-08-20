@@ -1,80 +1,160 @@
-/* global exifr */
-const photoInput = document.querySelector('#photo-input');
-const dropZone = document.querySelector('#drop-zone');
+const config = window.PHOTO_TIMELINE_CONFIG || {};
 const timeline = document.querySelector('#timeline');
+const timelineScroll = document.querySelector('#timeline-scroll');
+const photoArchive = document.querySelector('#photo-archive');
 const emptyState = document.querySelector('#empty-state');
-const status = document.querySelector('#status');
-const photoCount = document.querySelector('#photo-count');
-const clearButton = document.querySelector('#clear-button');
-const exportButton = document.querySelector('#export-button');
+const dateRange = document.querySelector('#date-range');
 const dialog = document.querySelector('#photo-dialog');
 const dialogImage = document.querySelector('#dialog-image');
 const dialogDate = document.querySelector('#dialog-date');
 const dialogName = document.querySelector('#dialog-name');
-let photos = [];
+const dialogCaption = document.querySelector('#dialog-caption');
+const shortDate = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
+const fullDate = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+const monthDate = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'long' });
 
-const dateFormat = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-const monthFormat = new Intl.DateTimeFormat(undefined, { month: 'long' });
+document.title = config.title || 'Photo Timeline';
+document.querySelector('#site-title').textContent = config.title || 'PHOTO TIMELINE';
+document.querySelector('#intro-copy').textContent = config.description || 'Photos in this archive are served directly from the repository and organized by their capture metadata.';
 
-function usableDate(value) {
-  const date = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
+function fromDateKey(key) {
+  const [year, month, day] = key.split('-').map(Number);
+  return new Date(year, month - 1, day);
 }
 
-async function readPhoto(file) {
-  let metadata = {};
-  try { metadata = await exifr.parse(file, { pick: ['DateTimeOriginal', 'CreateDate', 'ModifyDate', 'GPSLatitude', 'GPSLongitude'] }) || {}; }
-  catch (_) { /* Some formats do not expose readable EXIF; use the file date below. */ }
-  const captured = usableDate(metadata.DateTimeOriginal) || usableDate(metadata.CreateDate) || usableDate(metadata.ModifyDate) || new Date(file.lastModified);
-  return { id: crypto.randomUUID(), name: file.name, type: file.type, captured, source: metadata.DateTimeOriginal || metadata.CreateDate ? 'embedded metadata' : 'file date', url: URL.createObjectURL(file) };
+function groupBy(items, keyFor) {
+  const groups = new Map();
+  for (const item of items) {
+    const key = keyFor(item);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(item);
+  }
+  return groups;
 }
 
-async function addPhotos(files) {
-  const imageFiles = [...files].filter(file => file.type.startsWith('image/') || /\.hei[cf]$/i.test(file.name));
-  if (!imageFiles.length) { status.textContent = 'Choose image files to add them to the timeline.'; return; }
-  status.textContent = `Reading dates from ${imageFiles.length} photo${imageFiles.length === 1 ? '' : 's'}…`;
-  const newPhotos = await Promise.all(imageFiles.map(readPhoto));
-  photos.push(...newPhotos);
-  photos.sort((a, b) => a.captured - b.captured);
-  render();
-  status.textContent = `Added ${newPhotos.length} photo${newPhotos.length === 1 ? '' : 's'}. Dates come from EXIF when available, otherwise the file date.`;
+function displayRange(photos) {
+  const dated = photos.filter(photo => photo.capturedDate);
+  if (!dated.length) return photos.length ? 'UNDATED ARCHIVE' : 'ADD PHOTOS TO BEGIN';
+  const first = fromDateKey(dated[0].capturedDate);
+  const last = fromDateKey(dated.at(-1).capturedDate);
+  const sameYear = first.getFullYear() === last.getFullYear();
+  const firstLabel = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: sameYear ? undefined : 'numeric' }).format(first);
+  const lastLabel = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(last);
+  return first.getTime() === last.getTime() ? lastLabel.toUpperCase() : `${firstLabel} — ${lastLabel}`.toUpperCase();
 }
 
-function render() {
+function imageElement(photo) {
+  const image = new Image();
+  image.src = photo.src;
+  image.alt = '';
+  image.loading = 'lazy';
+  image.decoding = 'async';
+  return image;
+}
+
+function showPhoto(photo) {
+  dialogImage.src = photo.src;
+  dialogImage.alt = photo.filename;
+  const date = photo.capturedDate ? fullDate.format(fromDateKey(photo.capturedDate)) : 'No capture date available';
+  dialogDate.textContent = `${date} · ${photo.dateSource}`;
+  dialogName.textContent = photo.filename;
+  dialogCaption.textContent = photo.description || '';
+  dialogCaption.hidden = !photo.description;
+  dialog.showModal();
+}
+
+function renderTimeline(photos) {
   timeline.replaceChildren();
-  // A plain Map keeps this compatible with browsers that do not yet support Map.groupBy.
-  const grouped = new Map();
-  for (const photo of photos) {
-    const key = `${photo.captured.getFullYear()}-${String(photo.captured.getMonth() + 1).padStart(2, '0')}`;
-    grouped.set(key, [...(grouped.get(key) || []), photo]);
+  const dated = photos.filter(photo => photo.capturedDate);
+  const dayGroups = groupBy(dated, photo => photo.capturedDate);
+  for (const [dateKey, dayPhotos] of dayGroups) {
+    const day = document.createElement('section');
+    day.className = 'day';
+    const date = fromDateKey(dateKey);
+    day.innerHTML = `<p class="day-count">${dayPhotos.length} ${dayPhotos.length === 1 ? 'photo' : 'photos'}</p><div class="day-strip"></div><time class="day-date" datetime="${dateKey}">${shortDate.format(date)}</time>`;
+    const strip = day.querySelector('.day-strip');
+    for (const photo of dayPhotos) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'timeline-photo';
+      button.title = `${photo.filename} — ${fullDate.format(date)}`;
+      const image = imageElement(photo);
+      image.addEventListener('error', () => button.classList.add('has-error'), { once: true });
+      button.append(image);
+      button.addEventListener('click', () => showPhoto(photo));
+      strip.append(button);
+    }
+    timeline.append(day);
   }
-  for (const [key, group] of grouped) {
-    const [year, month] = key.split('-').map(Number);
-    const section = document.createElement('section'); section.className = 'time-group';
-    section.innerHTML = `<div class="time-label"><h2>${year}</h2><p>${monthFormat.format(new Date(year, month - 1, 1)).toUpperCase()}</p></div><div class="photo-grid"></div>`;
-    const grid = section.querySelector('.photo-grid');
-    group.forEach(photo => grid.append(photoCard(photo)));
-    timeline.append(section);
-  }
-  emptyState.hidden = photos.length > 0;
-  photoCount.textContent = `${photos.length} PHOTO${photos.length === 1 ? '' : 'S'}`;
-  clearButton.disabled = exportButton.disabled = !photos.length;
+  requestAnimationFrame(() => { timelineScroll.scrollLeft = Math.max(0, timeline.scrollWidth - timelineScroll.clientWidth); });
 }
 
-function photoCard(photo) {
-  const button = document.createElement('button'); button.className = 'photo-card'; button.type = 'button';
-  button.innerHTML = `<span class="photo-frame"><img src="${photo.url}" alt="${escapeHtml(photo.name)}" loading="lazy"></span><span class="photo-meta"><span class="photo-name">${escapeHtml(photo.name)}</span><time datetime="${photo.captured.toISOString()}">${dateFormat.format(photo.captured)}</time></span>`;
-  button.addEventListener('click', () => { dialogImage.src = photo.url; dialogImage.alt = photo.name; dialogDate.textContent = `${dateFormat.format(photo.captured).toUpperCase()} · ${photo.source.toUpperCase()}`; dialogName.textContent = photo.name; dialog.showModal(); });
-  return button;
+function archiveHeading(key) {
+  if (key === 'undated') return 'Undated';
+  return monthDate.format(fromDateKey(`${key}-01`));
 }
 
-function escapeHtml(value) { const div = document.createElement('div'); div.textContent = value; return div.innerHTML; }
-dropZone.addEventListener('dragover', event => { event.preventDefault(); dropZone.classList.add('is-dragging'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('is-dragging'));
-dropZone.addEventListener('drop', event => { event.preventDefault(); dropZone.classList.remove('is-dragging'); addPhotos(event.dataTransfer.files); });
-dropZone.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); photoInput.click(); } });
-photoInput.addEventListener('change', event => { addPhotos(event.target.files); photoInput.value = ''; });
+function renderArchive(photos) {
+  photoArchive.replaceChildren();
+  const monthGroups = groupBy(photos, photo => photo.capturedDate ? photo.capturedDate.slice(0, 7) : 'undated');
+  for (const [monthKey, monthPhotos] of monthGroups) {
+    const group = document.createElement('section');
+    group.className = 'archive-month';
+    const heading = document.createElement('h2');
+    heading.className = 'month-heading';
+    heading.innerHTML = `${archiveHeading(monthKey)}<span>${monthPhotos.length} ${monthPhotos.length === 1 ? 'PHOTO' : 'PHOTOS'}</span>`;
+    const grid = document.createElement('div');
+    grid.className = 'photo-grid';
+    for (const photo of monthPhotos) {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'photo-card';
+      const frame = document.createElement('span');
+      frame.className = 'photo-frame';
+      const image = imageElement(photo);
+      image.alt = photo.filename;
+      image.addEventListener('error', () => { frame.classList.add('image-missing'); image.remove(); }, { once: true });
+      frame.append(image);
+      const meta = document.createElement('span');
+      meta.className = 'photo-meta';
+      meta.innerHTML = `<span class="photo-name">${escapeHtml(photo.filename)}</span><time class="photo-date"${photo.capturedDate ? ` datetime="${photo.capturedDate}"` : ''}>${photo.capturedDate ? shortDate.format(fromDateKey(photo.capturedDate)) : 'NO DATE'}</time>`;
+      card.append(frame, meta);
+      card.addEventListener('click', () => showPhoto(photo));
+      grid.append(card);
+    }
+    group.append(heading, grid);
+    photoArchive.append(group);
+  }
+}
+
+function escapeHtml(value) {
+  const element = document.createElement('span');
+  element.textContent = value;
+  return element.innerHTML;
+}
+
+async function initialise() {
+  try {
+    const response = await fetch('data/timeline.json', { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Could not load data/timeline.json (${response.status})`);
+    const data = await response.json();
+    const photos = (data.photos || [])
+      .filter(photo => photo.src && (!photo.capturedDate || /^\d{4}-\d{2}-\d{2}$/.test(photo.capturedDate)))
+      .sort((a, b) => (a.capturedDate || '9999-12-31').localeCompare(b.capturedDate || '9999-12-31') || a.filename.localeCompare(b.filename));
+    dateRange.textContent = displayRange(photos);
+    emptyState.hidden = photos.length > 0;
+    if (photos.length) {
+      renderTimeline(photos);
+      renderArchive(photos);
+    }
+  } catch (error) {
+    console.error(error);
+    dateRange.textContent = 'BUILD DATA TO BEGIN';
+    emptyState.hidden = false;
+    emptyState.querySelector('p:last-child').innerHTML = 'The timeline data is missing. Run <code>npm run build</code> from the repository, then publish the generated site.';
+  }
+}
+
 document.querySelector('#close-dialog').addEventListener('click', () => dialog.close());
 dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
-clearButton.addEventListener('click', () => { photos.forEach(photo => URL.revokeObjectURL(photo.url)); photos = []; render(); status.textContent = 'Timeline cleared. Nothing was uploaded or saved.'; });
-exportButton.addEventListener('click', () => { const data = photos.map(({ id, url, ...photo }) => ({ ...photo, captured: photo.captured.toISOString() })); const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const link = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'photo-timeline.json' }); link.click(); URL.revokeObjectURL(link.href); });
+initialise();

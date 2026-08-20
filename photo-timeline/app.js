@@ -9,9 +9,17 @@ const dialogImage = document.querySelector('#dialog-image');
 const dialogDate = document.querySelector('#dialog-date');
 const dialogName = document.querySelector('#dialog-name');
 const dialogCaption = document.querySelector('#dialog-caption');
+const previousPhoto = document.querySelector('#previous-photo');
+const nextPhoto = document.querySelector('#next-photo');
+const randomPhoto = document.querySelector('#random-photo');
+const photoTotal = document.querySelector('#photos-total');
+const photoYear = document.querySelector('#photos-year');
+const photoMonth = document.querySelector('#photos-month');
 const shortDate = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
 const fullDate = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
 const monthDate = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'long' });
+let archivePhotos = [];
+let currentPhotoIndex = -1;
 
 document.title = config.title || 'Photo Timeline';
 document.querySelector('#site-title').textContent = config.title || 'PHOTO TIMELINE';
@@ -53,6 +61,7 @@ function imageElement(photo) {
 }
 
 function showPhoto(photo) {
+  currentPhotoIndex = archivePhotos.indexOf(photo);
   dialogImage.src = photo.src;
   dialogImage.alt = photo.filename;
   const date = photo.capturedDate ? fullDate.format(fromDateKey(photo.capturedDate)) : 'No capture date available';
@@ -60,7 +69,27 @@ function showPhoto(photo) {
   dialogName.textContent = photo.filename;
   dialogCaption.textContent = photo.description || '';
   dialogCaption.hidden = !photo.description;
-  dialog.showModal();
+  if (!dialog.open) dialog.showModal();
+}
+
+function stepPhoto(direction) {
+  if (!archivePhotos.length) return;
+  currentPhotoIndex = (currentPhotoIndex + direction + archivePhotos.length) % archivePhotos.length;
+  showPhoto(archivePhotos[currentPhotoIndex]);
+}
+
+function renderStats(photos) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const isInCurrentMonth = photo => {
+    if (!photo.capturedDate) return false;
+    const [photoYear, photoMonth] = photo.capturedDate.split('-').map(Number);
+    return photoYear === year && photoMonth === month;
+  };
+  photoTotal.textContent = photos.length;
+  photoYear.textContent = photos.filter(photo => photo.capturedDate?.startsWith(`${year}-`)).length;
+  photoMonth.textContent = photos.filter(isInCurrentMonth).length;
 }
 
 function renderTimeline(photos) {
@@ -144,6 +173,9 @@ async function initialise() {
     dateRange.textContent = displayRange(photos);
     emptyState.hidden = photos.length > 0;
     if (photos.length) {
+      archivePhotos = photos;
+      renderStats(photos);
+      randomPhoto.disabled = false;
       renderTimeline(photos);
       renderArchive(photos);
     }
@@ -157,4 +189,14 @@ async function initialise() {
 
 document.querySelector('#close-dialog').addEventListener('click', () => dialog.close());
 dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
+previousPhoto.addEventListener('click', () => stepPhoto(-1));
+nextPhoto.addEventListener('click', () => stepPhoto(1));
+randomPhoto.addEventListener('click', () => {
+  if (archivePhotos.length) showPhoto(archivePhotos[Math.floor(Math.random() * archivePhotos.length)]);
+});
+document.addEventListener('keydown', event => {
+  if (!dialog.open) return;
+  if (event.key === 'ArrowLeft') { event.preventDefault(); stepPhoto(-1); }
+  if (event.key === 'ArrowRight') { event.preventDefault(); stepPhoto(1); }
+});
 initialise();

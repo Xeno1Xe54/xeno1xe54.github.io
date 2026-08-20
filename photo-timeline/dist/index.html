@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="A repository-backed photo timeline." />
+    <title>Photo Timeline</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="masthead">
+      <a class="site-title" href="./" aria-label="Photo timeline home"><span class="title-star">✦</span><span id="site-title">PHOTO TIMELINE</span></a>
+      <p id="date-range" class="date-range">ADD PHOTOS TO BEGIN</p>
+    </header>
+
+    <section class="orbit-rail" aria-label="Chronological photo timeline">
+      <div id="timeline-scroll" class="timeline-scroll" tabindex="0">
+        <div id="timeline" class="timeline" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <main>
+      <section class="intro" aria-labelledby="archive-heading">
+        <p class="eyebrow">REPOSITORY-BACKED PHOTO ARCHIVE</p>
+        <h1 id="archive-heading">Every image,<br />right on time.</h1>
+        <p id="intro-copy" class="intro-copy">Photos in this archive are served directly from the repository and organized by their capture metadata.</p>
+        <div class="archive-tools" aria-label="Archive summary and controls">
+          <dl class="photo-stats">
+            <div><dt>Photos total</dt><dd id="photos-total">—</dd></div>
+            <div><dt>Photos this year</dt><dd id="photos-year">—</dd></div>
+            <div><dt>Photos this month</dt><dd id="photos-month">—</dd></div>
+          </dl>
+          <button id="random-photo" class="random-photo" type="button" disabled><span aria-hidden="true">✦</span> Random photo</button>
+        </div>
+      </section>
+
+      <section id="empty-state" class="empty-state" hidden>
+        <p class="eyebrow">NO PHOTOS YET</p>
+        <h2>Start with the <code>photos</code> folder.</h2>
+        <p>Add your pictures to <code>photos/</code>, run <code>npm run build</code>, then push to GitHub. The deployment workflow will publish the updated archive.</p>
+      </section>
+
+      <section id="photo-archive" class="photo-archive" aria-label="Photo archive"></section>
+    </main>
+
+    <dialog id="photo-dialog" class="photo-dialog">
+      <button id="close-dialog" class="close-dialog" aria-label="Close photo">×</button>
+      <button id="previous-photo" class="dialog-nav previous-photo" type="button" aria-label="Previous photo">‹</button>
+      <button id="next-photo" class="dialog-nav next-photo" type="button" aria-label="Next photo">›</button>
+      <figure>
+        <img id="dialog-image" alt="" />
+        <figcaption>
+          <p id="dialog-date"></p>
+          <h2 id="dialog-name"></h2>
+          <p id="dialog-caption" class="dialog-caption" hidden></p>
+        </figcaption>
+      </figure>
+    </dialog>
+
+    <footer><span>PHOTO TIMELINE</span><span>BUILT FROM <code>/photos</code></span></footer>
+    <script src="site-config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

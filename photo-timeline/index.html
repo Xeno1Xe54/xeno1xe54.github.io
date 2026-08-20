@@ -24,6 +24,14 @@
         <p class="eyebrow">REPOSITORY-BACKED PHOTO ARCHIVE</p>
         <h1 id="archive-heading">Every image,<br />right on time.</h1>
         <p id="intro-copy" class="intro-copy">Photos in this archive are served directly from the repository and organized by their capture metadata.</p>
+        <div class="archive-tools" aria-label="Archive summary and controls">
+          <dl class="photo-stats">
+            <div><dt>Photos total</dt><dd id="photos-total">—</dd></div>
+            <div><dt>Photos this year</dt><dd id="photos-year">—</dd></div>
+            <div><dt>Photos this month</dt><dd id="photos-month">—</dd></div>
+          </dl>
+          <button id="random-photo" class="random-photo" type="button" disabled><span aria-hidden="true">✦</span> Random photo</button>
+        </div>
       </section>
 
       <section id="empty-state" class="empty-state" hidden>
@@ -37,6 +45,8 @@
 
     <dialog id="photo-dialog" class="photo-dialog">
       <button id="close-dialog" class="close-dialog" aria-label="Close photo">×</button>
+      <button id="previous-photo" class="dialog-nav previous-photo" type="button" aria-label="Previous photo">‹</button>
+      <button id="next-photo" class="dialog-nav next-photo" type="button" aria-label="Next photo">›</button>
       <figure>
         <img id="dialog-image" alt="" />
         <figcaption>

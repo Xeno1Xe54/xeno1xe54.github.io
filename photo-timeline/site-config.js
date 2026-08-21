@@ -1,5 +1,4 @@
-// Edit these two lines to personalize the public site.
 window.PHOTO_TIMELINE_CONFIG = {
-  title: 'PHOTO TIMELINE',
-  description: 'Photos in this archive are served directly from the repository and organized by their capture metadata.'
+  title: 'SAMUEL FIREMAN',
+  description: 'A growing collection of photographs—kept here to revisit the moments that might otherwise fade.'
 };
